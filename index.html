@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camp for You — imkoniyatlar xaritasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,1,300;9..144,1,500;9..144,1,600;9..144,0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#1B2340;
+    --ink-2:#11162A;
+    --porcelain:#F5F2EA;
+    --porcelain-dim:#EAE4D4;
+    --amber:#E1A83E;   /* grant */
+    --teal:#2E7A6B;    /* camp */
+    --plum:#B4557B;    /* volunteer */
+    --text:#20242E;
+    --line: rgba(27,35,64,0.14);
+    --line-onDark: rgba(245,242,234,0.18);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--porcelain);color:var(--text);font-family:'Manrope',sans-serif;line-height:1.55;}
+  h1,h2,h3{font-family:'Fraunces',serif;margin:0;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  .view{display:none;}
+  .view.active{display:block;animation:fadeUp .5s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+  }
+  .mono{font-family:'Space Mono',monospace;}
+
+  /* ---------- HEADER ---------- */
+  header.site{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 6vw;background:var(--ink);color:var(--porcelain);
+    position:sticky;top:0;z-index:40;
+  }
+  .wordmark{font-family:'Fraunces',serif;font-weight:600;font-size:1.35rem;cursor:pointer;letter-spacing:.01em;}
+  .wordmark span.dot{color:var(--amber);}
+  nav.site{display:flex;gap:30px;align-items:center;}
+  nav.site button{font-size:.82rem;background:none;border:none;color:var(--porcelain);letter-spacing:.03em;opacity:.72;cursor:pointer;padding:0;position:relative;}
+  nav.site button::after{content:"";position:absolute;left:0;bottom:-6px;width:0;height:1.5px;background:var(--amber);transition:width .2s ease;}
+  nav.site button:hover{opacity:1;}
+  nav.site button:hover::after, nav.site button.active::after{width:100%;}
+  nav.site button.active{opacity:1;}
+  .burger{display:none;background:none;border:1px solid var(--line-onDark);color:var(--porcelain);width:38px;height:34px;border-radius:3px;cursor:pointer;font-size:1rem;}
+
+  /* ===================== HOME ===================== */
+  .hero{
+    position:relative;overflow:hidden;background:
+      radial-gradient(ellipse at 78% -10%, rgba(225,168,62,0.16), transparent 45%),
+      radial-gradient(ellipse at 10% 110%, rgba(46,122,107,0.18), transparent 50%),
+      var(--ink-2);
+    color:var(--porcelain);padding:96px 6vw 60px;
+    display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;
+  }
+  .hero-copy .eyebrow{
+    font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--amber);display:flex;align-items:center;gap:10px;margin-bottom:22px;
+  }
+  .hero-copy .eyebrow::before{content:"";width:22px;height:1px;background:var(--amber);display:inline-block;}
+  .hero-copy h1{
+    font-size:clamp(2.4rem,4.6vw,3.7rem);font-weight:500;font-style:italic;line-height:1.08;
+    max-width:15ch;margin-bottom:22px;
+  }
+  .hero-copy h1 em{font-style:normal;font-weight:600;color:var(--amber);}
+  .hero-copy p.lead{max-width:46ch;font-size:1.05rem;color:#C9CEDA;margin:0 0 32px;}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:13px 24px;font-size:.88rem;font-weight:600;
+    border-radius:2px;cursor:pointer;border:1px solid transparent;text-decoration:none;
+  }
+  .btn-solid{background:var(--amber);color:var(--ink-2);}
+  .btn-solid:hover{background:#f0ba54;}
+  .btn-ghost{background:none;color:var(--porcelain);border-color:var(--line-onDark);}
+  .btn-ghost:hover{border-color:var(--amber);color:var(--amber);}
+
+  .hero-art{position:relative;height:360px;}
+  .hero-art svg{width:100%;height:100%;}
+  .route-line{stroke-dasharray:6 8;stroke-dashoffset:0;animation:dash 26s linear infinite;}
+  @keyframes dash{to{stroke-dashoffset:-280;}}
+  .node{filter:drop-shadow(0 0 6px rgba(225,168,62,.5));}
+
+  .tagline-strip{
+    background:var(--ink);color:#9AA1B5;padding:16px 6vw;display:flex;gap:34px;flex-wrap:wrap;
+    font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+    border-bottom:1px solid var(--line-onDark);
+  }
+  .tagline-strip span{display:flex;align-items:center;gap:10px;}
+  .tagline-strip span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);}
+
+  /* ---------- TRACK CARDS ---------- */
+  .tracks{padding:80px 6vw 30px;}
+  .tracks-head{max-width:60ch;margin-bottom:44px;}
+  .tracks-head .numeral{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--amber);letter-spacing:.1em;}
+  .tracks-head h2{font-size:1.9rem;font-style:italic;font-weight:500;margin-top:10px;}
+  .tracks-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:22px;}
+  .track-card{
+    position:relative;border-radius:4px;padding:36px 30px;cursor:pointer;overflow:hidden;
+    color:var(--porcelain);min-height:280px;display:flex;flex-direction:column;justify-content:space-between;
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .track-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -20px rgba(17,22,42,0.45);}
+  .track-card.camp{background:linear-gradient(155deg,var(--teal),#1e5a4e);}
+  .track-card.grant{background:linear-gradient(155deg,var(--amber),#b9822a);}
+  .track-card.volunteer{background:linear-gradient(155deg,var(--plum),#7c3956);}
+  .track-card .icon{width:34px;height:34px;opacity:.9;}
+  .track-card .num{position:absolute;top:24px;right:26px;font-family:'Space Mono',monospace;font-size:.72rem;opacity:.65;}
+  .track-card h3{font-size:1.5rem;margin:20px 0 8px;}
+  .track-card p{font-size:.88rem;color:rgba(245,242,234,0.85);margin:0 0 20px;max-width:32ch;}
+  .track-card .go{font-size:.8rem;font-weight:700;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px;}
+  .track-card .go svg{width:14px;height:14px;transition:transform .2s ease;}
+  .track-card:hover .go svg{transform:translateX(4px);}
+
+  .home-secondary{padding:36px 6vw 100px;display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  .sec-card{
+    background:#fff;border:1px solid var(--line);border-radius:4px;padding:28px 30px;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:20px;transition:border-color .2s ease, transform .2s ease;
+  }
+  .sec-card:hover{border-color:var(--amber);transform:translateY(-2px);}
+  .sec-card h3{font-size:1.1rem;margin-bottom:6px;}
+  .sec-card p{font-size:.85rem;color:#5b5f6b;margin:0;}
+  .sec-card .arrow{font-size:1.3rem;color:var(--amber);flex-shrink:0;}
+
+  /* ===================== DIRECTORY ===================== */
+  .directory-header{padding:30px 6vw 0;max-width:1300px;margin:0 auto;}
+  .back-link{background:none;border:none;color:var(--amber);font-size:.85rem;cursor:pointer;padding:0;font-weight:700;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;}
+  .app{display:flex;align-items:flex-start;gap:0;max-width:1300px;margin:0 auto;}
+  .sidebar{width:270px;flex-shrink:0;background:var(--porcelain-dim);border-right:1px solid var(--line);padding:32px 26px;position:sticky;top:76px;align-self:flex-start;}
+  .sidebar h4{font-family:'Space Mono',monospace;font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#7c8091;margin:0 0 16px;}
+  .sidebar-block + .sidebar-block{margin-top:34px;padding-top:28px;border-top:1px solid var(--line);}
+  .cat-list{list-style:none;margin:0;padding:0;}
+  .cat-list li{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;cursor:pointer;font-size:.94rem;border-radius:3px;color:#3d4258;margin-bottom:4px;border-left:3px solid transparent;}
+  .cat-list li .count{font-family:'Space Mono',monospace;font-size:.72rem;color:#9296a3;}
+  .cat-list li.active{background:#fff;font-weight:700;color:var(--ink);}
+  .cat-list li[data-cat="camp"].active{border-left-color:var(--teal);}
+  .cat-list li[data-cat="grant"].active{border-left-color:var(--amber);}
+  .cat-list li[data-cat="volunteer"].active{border-left-color:var(--plum);}
+  .cat-list li[data-cat=""].active{border-left-color:var(--ink);}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-family:'Space Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#7c8091;margin-bottom:7px;}
+  .field select, .field input{width:100%;border:none;border-bottom:1px solid var(--line);background:transparent;padding:8px 2px;font-family:'Manrope',sans-serif;font-size:.92rem;color:var(--text);}
+  .field select:focus, .field input:focus{outline:none;border-bottom-color:var(--amber);}
+  .sidebar-close{display:none;}
+
+  .content{flex:1;min-width:0;padding:26px 6vw 70px 36px;}
+  .content-head{display:flex;align-items:baseline;gap:14px;margin-bottom:24px;flex-wrap:wrap;}
+  .content-head h2{font-size:1.6rem;font-style:italic;font-weight:500;}
+  .content-head .count-tag{font-family:'Space Mono',monospace;font-size:.78rem;color:#7c8091;margin-left:auto;}
+
+  .directory{border-top:1px solid var(--line);}
+  .drow{border-bottom:1px solid var(--line);border-left:3px solid transparent;transition:border-color .15s ease, background .15s ease;}
+  .drow.cat-camp{}
+  .drow:hover{background:#fff;}
+  .drow-head{display:grid;grid-template-columns:40px 1fr auto 18px;align-items:center;gap:18px;padding:19px 10px;cursor:pointer;}
+  .drow-head .idx{font-family:'Space Mono',monospace;color:#a7abb8;font-size:.85rem;}
+  .drow-head .titles h3{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:5px;}
+  .drow-head .titles .kicker{font-family:'Space Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;padding:2px 0;}
+  .kicker.camp{color:var(--teal);}
+  .kicker.grant{color:var(--amber);}
+  .kicker.volunteer{color:var(--plum);}
+  .drow.cat-camp{border-left-color:var(--teal);}
+  .drow.cat-grant{border-left-color:var(--amber);}
+  .drow.cat-volunteer{border-left-color:var(--plum);}
+  .drow-head .quick-meta{font-size:.78rem;color:#7c8091;white-space:nowrap;display:none;}
+  .drow-head .chev{transition:transform .2s ease;color:#a7abb8;font-size:.9rem;justify-self:end;}
+  .drow.open .chev{transform:rotate(180deg);color:var(--amber);}
+  .drow-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .drow.open .drow-body{max-height:480px;}
+  .drow-body-inner{padding:0 10px 26px 58px;}
+  .drow-body-inner p{font-size:.93rem;line-height:1.65;color:#454a58;margin:0 0 14px;max-width:64ch;}
+  .drow-body-inner .meta{display:flex;flex-wrap:wrap;gap:10px;font-size:.78rem;color:#5b5f6b;margin-bottom:16px;}
+  .drow-body-inner .meta span{background:var(--porcelain-dim);padding:4px 10px;border-radius:20px;}
+  .drow-body-inner a.apply{font-size:.85rem;font-weight:700;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--amber);padding-bottom:1px;}
+  .empty{font-style:italic;color:#8a8e99;padding:30px 10px;}
+  @media (min-width:640px){ .drow-head .quick-meta{display:block;} }
+
+  /* ===================== GUIDEBOOK (gated) ===================== */
+  #view-guidebook .inner{padding:60px 6vw 100px;max-width:1040px;margin:0 auto;}
+  .section-label{display:flex;align-items:baseline;gap:14px;margin-bottom:36px;}
+  .section-label .numeral{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--amber);letter-spacing:.08em;}
+  .section-label h2{font-size:1.7rem;font-style:italic;font-weight:500;}
+
+  .gate{max-width:460px;margin:0 auto;background:var(--ink-2);color:var(--porcelain);border-radius:6px;padding:44px 40px;position:relative;overflow:hidden;}
+  .gate::before{content:"";position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(225,168,62,.25),transparent 70%);}
+  .gate .badge-ring{width:52px;height:52px;border:1.5px solid var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:24px;color:var(--amber);font-family:'Fraunces',serif;font-style:italic;font-size:1.3rem;}
+  .gate p.intro{font-size:.92rem;color:#C9CEDA;margin:0 0 26px;line-height:1.6;position:relative;}
+  .gate label{display:block;font-family:'Space Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#9AA1B5;margin-bottom:8px;}
+  .gate input{width:100%;border:none;border-bottom:1px solid var(--line-onDark);padding:9px 2px;font-family:'Manrope',sans-serif;font-size:.96rem;margin-bottom:22px;background:transparent;color:var(--porcelain);}
+  .gate input:focus{outline:none;border-bottom-color:var(--amber);}
+  .gate input::placeholder{color:#5c6178;}
+
+  .guide-cols{columns:2 320px;column-gap:44px;}
+  .guide-item{break-inside:avoid;margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid var(--line);}
+  .guide-item .idx{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--amber);letter-spacing:.08em;}
+  .guide-item h3{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.04rem;margin:8px 0 8px;}
+  .guide-item p{font-size:.89rem;color:#454a58;line-height:1.6;margin:0 0 8px;}
+  .guide-item a{font-size:.8rem;text-decoration:none;border-bottom:1.5px solid var(--amber);font-weight:600;}
+
+  /* ===================== HELP ===================== */
+  #view-help .inner{padding:70px 6vw 100px;max-width:760px;margin:0 auto;}
+  .postcard{background:#fff;border:1px solid var(--line);border-radius:6px;padding:40px;}
+  .postcard label{display:block;font-family:'Space Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#7c8091;margin-bottom:8px;}
+  .postcard input, .postcard textarea{width:100%;border:none;border-bottom:1px solid var(--line);padding:9px 2px;font-family:'Manrope',sans-serif;font-size:.96rem;margin-bottom:22px;background:transparent;}
+  .postcard input:focus, .postcard textarea:focus{outline:none;border-bottom-color:var(--amber);}
+  .postcard textarea{min-height:104px;resize:vertical;}
+  button.primary{background:var(--ink);color:var(--porcelain);border:none;padding:13px 28px;border-radius:2px;font-weight:700;font-size:.88rem;cursor:pointer;}
+  button.primary:hover{background:var(--ink-2);}
+  .status-msg{font-size:.82rem;margin-top:12px;font-style:italic;}
+  .status-msg.ok{color:var(--teal);}
+  .status-msg.err{color:#a33;}
+
+  footer{padding:30px 6vw;text-align:center;font-family:'Space Mono',monospace;font-size:.72rem;color:#9296a3;border-top:1px solid var(--line);letter-spacing:.05em;background:var(--porcelain-dim);}
+
+  /* ===================== ADMIN ===================== */
+  .admin-panel{position:fixed;inset:0;background:rgba(17,22,42,.65);display:none;align-items:center;justify-content:center;z-index:80;padding:20px;}
+  .admin-panel.open{display:flex;}
+  .admin-box{background:var(--porcelain);max-width:640px;width:100%;max-height:88vh;overflow-y:auto;padding:36px;position:relative;border-radius:6px;border-top:4px solid var(--amber);}
+  .admin-close{position:absolute;top:16px;right:18px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#555;}
+  .admin-box form{display:grid;gap:12px;margin-bottom:26px;}
+  .admin-box input, .admin-box select, .admin-box textarea{border:1px solid var(--line);border-radius:3px;padding:9px 11px;font-family:'Manrope',sans-serif;font-size:.88rem;background:#fff;}
+  .admin-box textarea{min-height:80px;}
+  .admin-box .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .admin-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .admin-tabs button{background:none;border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:.78rem;cursor:pointer;}
+  .admin-tabs button.active{background:var(--ink);color:var(--porcelain);border-color:var(--ink);}
+  .msg-item{border-bottom:1px solid var(--line);padding:10px 0;font-size:.85rem;}
+  .msg-item .who{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--amber);}
+  hr.dash{border:none;border-top:1px solid var(--line);margin:20px 0;}
+
+  /* ===================== MOBILE ===================== */
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr;padding:70px 6vw 40px;}
+    .hero-art{height:220px;order:-1;}
+    nav.site{display:none;}
+    .burger{display:block;}
+    .tracks-grid{grid-template-columns:1fr;}
+    .home-secondary{grid-template-columns:1fr;}
+    .tagline-strip{gap:16px 24px;}
+    .app{display:block;}
+    .sidebar{position:fixed;top:0;right:0;bottom:0;width:82vw;max-width:340px;z-index:60;transform:translateX(100%);transition:transform .25s ease;overflow-y:auto;box-shadow:-10px 0 30px rgba(0,0,0,.25);}
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-close{display:block;position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;}
+    .content{padding:22px 6vw 20px;}
+    .mobile-bar{display:flex;gap:10px;margin-bottom:22px;}
+    .mobile-bar button{flex:1;background:var(--ink);color:var(--porcelain);border:none;padding:12px;font-size:.82rem;font-weight:600;cursor:pointer;border-radius:3px;}
+    .drow-head{grid-template-columns:28px 1fr 18px;gap:12px;}
+    .drow-body-inner{padding:0 8px 22px 40px;}
+    .guide-cols{columns:1;}
+    .gate{padding:34px 26px;}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(17,22,42,.4);z-index:50;}
+    .overlay.open{display:block;}
+  }
+  @media (min-width:901px){ .mobile-bar{display:none;} }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wordmark" onclick="showView('home')">Camp for You<span class="dot">.</span></div>
+  <nav class="site">
+    <button onclick="showView('home')" data-nav="home">Bosh sahifa</button>
+    <button onclick="showView('guidebook')" data-nav="guidebook">Guidebook</button>
+    <button onclick="showView('help')" data-nav="help">Yordam</button>
+  </nav>
+  <button class="burger" id="burger-btn" aria-label="Menyu">☰</button>
+</header>
+
+<!-- ===================== HOME ===================== -->
+<div class="view active" id="view-home">
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Camp · Grant · Volontyorlik</span>
+      <h1>Dunyo bo'ylab <em>imkoniyatlar</em> bitta xaritada</h1>
+      <p class="lead">Yoshlar uchun laagerlar, grant dasturlari va volontyorlik loyihalari — yoshingiz, davlatingiz va tilingizga mos ravishda saralab beriladi.</p>
+      <div class="hero-cta">
+        <button class="btn btn-solid" onclick="openTrack('camp')">Yo'nalishni tanlash</button>
+        <button class="btn btn-ghost" onclick="showView('guidebook')">Guidebook'ni ko'rish</button>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 420 360" fill="none">
+        <path class="route-line" d="M20 300 C 90 260, 120 120, 210 150 S 330 260, 400 90" stroke="#E1A83E" stroke-width="1.4" opacity=".8"/>
+        <path class="route-line" d="M40 60 C 110 90, 160 220, 250 210 S 360 160, 390 260" stroke="#2E7A6B" stroke-width="1.4" opacity=".7" style="animation-delay:-8s"/>
+        <circle class="node" cx="20" cy="300" r="4" fill="#E1A83E"/>
+        <circle class="node" cx="210" cy="150" r="5" fill="#F5F2EA"/>
+        <circle class="node" cx="400" cy="90" r="4" fill="#2E7A6B"/>
+        <circle class="node" cx="40" cy="60" r="4" fill="#B4557B"/>
+        <circle class="node" cx="250" cy="210" r="5" fill="#F5F2EA"/>
+        <circle class="node" cx="390" cy="260" r="4" fill="#E1A83E"/>
+      </svg>
+    </div>
+  </section>
+
+  <div class="tagline-strip">
+    <span>Camp — yozgi va qishki laagerlar</span>
+    <span>Grant — ta'lim va loyiha mablag'lari</span>
+    <span>Volontyorlik — mahalliy va xalqaro loyihalar</span>
+  </div>
+
+  <div class="tracks">
+    <div class="tracks-head">
+      <span class="numeral">01 — YO'NALISHLAR</span>
+      <h2>Qayerdan boshlaymiz?</h2>
+    </div>
+    <div class="tracks-grid">
+      <div class="track-card camp" onclick="openTrack('camp')">
+        <div class="num">01</div>
+        <div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 3v17"/><path d="M8 20 12 11l4 9"/></svg>
+          <h3>Camp</h3>
+          <p>Yozgi va qishki laagerlar, xalqaro va mahalliy dasturlar.</p>
+        </div>
+        <span class="go">Ko'rish <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="track-card grant" onclick="openTrack('grant')">
+        <div class="num">02</div>
+        <div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+          <h3>Grant</h3>
+          <p>Ta'lim va loyihalar uchun grant va stipendiya dasturlari.</p>
+        </div>
+        <span class="go">Ko'rish <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="track-card volunteer" onclick="openTrack('volunteer')">
+        <div class="num">03</div>
+        <div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7-4.5-9.5-9C.9 8.5 3 5 6.5 5 9 5 11 7 12 8c1-1 3-3 5.5-3 3.5 0 5.6 3.5 4 7-2.5 4.5-9.5 9-9.5 9Z"/></svg>
+          <h3>Volontyorlik</h3>
+          <p>Mahalliy va xalqaro volontyorlik loyihalari.</p>
+        </div>
+        <span class="go">Ko'rish <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-secondary">
+    <div class="sec-card" onclick="showView('guidebook')">
+      <div><h3>Guidebook &amp; tavsiyalar</h3><p>Ariza topshirish bo'yicha qo'llanmalar va foydali materiallar.</p></div>
+      <span class="arrow">→</span>
+    </div>
+    <div class="sec-card" onclick="showView('help')">
+      <div><h3>Adminga murojaat</h3><p>Savolingiz bormi? To'g'ridan-to'g'ri xabar yozing.</p></div>
+      <span class="arrow">→</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DIRECTORY ===================== -->
+<div class="view" id="view-directory">
+  <div class="overlay" id="overlay"></div>
+  <div class="directory-header">
+    <button class="back-link" onclick="showView('home')">← Bosh sahifaga</button>
+  </div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close-btn">&times;</button>
+      <div class="sidebar-block">
+        <h4>Yo'nalish</h4>
+        <ul class="cat-list" id="cat-list">
+          <li data-cat="">Barchasi <span class="count" id="count-all">–</span></li>
+          <li data-cat="camp">Camp <span class="count" id="count-camp">–</span></li>
+          <li data-cat="grant">Grant <span class="count" id="count-grant">–</span></li>
+          <li data-cat="volunteer">Volontyorlik <span class="count" id="count-volunteer">–</span></li>
+        </ul>
+      </div>
+      <div class="sidebar-block">
+        <h4>Filtr</h4>
+        <div class="field"><label>Yosh</label><input id="f-age" type="number" min="0" placeholder="Masalan: 17"></div>
+        <div class="field"><label>Davlat</label><input id="f-country" type="text" placeholder="Masalan: Uzbekistan"></div>
+        <div class="field"><label>Til</label><input id="f-language" type="text" placeholder="Masalan: English"></div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="mobile-bar"><button id="mobile-sidebar-btn">Yo'nalish &amp; Filtr</button></div>
+      <div class="content-head">
+        <h2 id="content-title">Barcha imkoniyatlar</h2>
+        <span class="count-tag" id="content-count"></span>
+      </div>
+      <div class="directory" id="directory-list"></div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================== GUIDEBOOK (gated) ===================== -->
+<div class="view" id="view-guidebook">
+  <div class="inner">
+    <div class="section-label"><span class="numeral">02 — GUIDEBOOK</span><h2>Tavsiyalar va qo'llanmalar</h2></div>
+
+    <div id="guide-gate">
+      <div class="gate">
+        <div class="badge-ring">CY</div>
+        <p class="intro">Guidebook materiallarini ko'rish uchun avval qisqacha ro'yxatdan o'ting.</p>
+        <form id="gate-form">
+          <label for="gate-name">Ismingiz</label>
+          <input id="gate-name" required placeholder="Ism Familiya">
+          <label for="gate-phone">Telefon raqamingiz</label>
+          <input id="gate-phone" type="tel" placeholder="+998 90 000 00 00" required>
+          <button class="btn btn-solid" type="submit" style="width:100%;justify-content:center;">Kirish</button>
+          <div class="status-msg" id="gate-status"></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="guide-content" style="display:none;">
+      <div class="guide-cols" id="guide-cols"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== HELP ===================== -->
+<div class="view" id="view-help">
+  <div class="inner">
+    <div class="section-label"><span class="numeral">03 — YORDAM</span><h2>Adminga murojaat</h2></div>
+    <form class="postcard" id="help-form">
+      <label for="h-name">Ismingiz</label>
+      <input id="h-name" required>
+      <label for="h-email">Email</label>
+      <input id="h-email" type="email" required>
+      <label for="h-msg">Xabar</label>
+      <textarea id="h-msg" required></textarea>
+      <button class="primary" type="submit">Yuborish</button>
+      <div class="status-msg" id="help-status"></div>
+    </form>
+  </div>
+</div>
+
+<footer>Camp for You — imkoniyatlar xaritasi</footer>
+
+<!-- ===================== ADMIN ===================== -->
+<div class="admin-panel" id="admin-panel">
+  <div class="admin-box">
+    <button class="admin-close" id="admin-close-btn">&times;</button>
+    <div id="admin-login-view">
+      <h2>Admin kirish</h2>
+      <form id="login-form">
+        <input id="login-email" type="email" placeholder="Email" required>
+        <input id="login-password" type="password" placeholder="Parol" required>
+        <button class="primary" type="submit">Kirish</button>
+      </form>
+      <div class="status-msg" id="login-status"></div>
+    </div>
+
+    <div id="admin-main-view" style="display:none;">
+      <h2>Admin panel</h2>
+      <div class="admin-tabs">
+        <button data-tab="add-listing" class="active">Yangi e'lon</button>
+        <button data-tab="add-guide">Guidebook</button>
+        <button data-tab="messages">Murojaatlar</button>
+        <button data-tab="subscribers">Ro'yxatdan o'tganlar</button>
+      </div>
+
+      <form id="listing-form" class="admin-tab-panel">
+        <select id="l-type" required>
+          <option value="camp">Camp</option>
+          <option value="grant">Grant</option>
+          <option value="volunteer">Volontyorlik</option>
+        </select>
+        <input id="l-title" placeholder="Sarlavha" required>
+        <textarea id="l-desc" placeholder="Tavsif" required></textarea>
+        <div class="row2"><input id="l-age-min" type="number" placeholder="Yosh (min)"><input id="l-age-max" type="number" placeholder="Yosh (max)"></div>
+        <div class="row2"><input id="l-country" placeholder="Davlat"><input id="l-language" placeholder="Til"></div>
+        <div class="row2"><input id="l-deadline" type="date"><input id="l-link" type="url" placeholder="Havola (link)"></div>
+        <button class="primary" type="submit">Qo'shish</button>
+        <div class="status-msg" id="listing-status"></div>
+      </form>
+
+      <form id="guide-form" class="admin-tab-panel" style="display:none;">
+        <input id="g-title" placeholder="Sarlavha" required>
+        <textarea id="g-content" placeholder="Matn / tavsiya"></textarea>
+        <input id="g-file" type="url" placeholder="Fayl havolasi (ixtiyoriy)">
+        <button class="primary" type="submit">Joylash</button>
+        <div class="status-msg" id="guide-status"></div>
+      </form>
+
+      <div id="messages-view" class="admin-tab-panel" style="display:none;">
+        <div id="messages-list"><p class="empty">Yuklanmoqda…</p></div>
+      </div>
+
+      <div id="subscribers-view" class="admin-tab-panel" style="display:none;">
+        <div id="subscribers-list"><p class="empty">Yuklanmoqda…</p></div>
+      </div>
+
+      <hr class="dash">
+      <button id="logout-btn" style="background:none;border:none;color:#a33;font-size:.78rem;cursor:pointer;">Chiqish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gcesuvckcwxswznhmybw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjZXN1dmNrY3d4c3d6bmhteWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODgyMTQsImV4cCI6MjEwMjY2NDIxNH0.bZsOmGz0PXQp9AGyW90gbsFVG8sOh4vzK6Fk70XYQF0";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const TYPE_LABEL = { camp: "Camp", grant: "Grant", volunteer: "Volontyorlik" };
+let activeCategory = "";
+let allListings = [];
+let guideUnlocked = false; // in-memory only for this visit — no browser storage used
+
+// ---------- VIEW ROUTER ----------
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('nav.site button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+  window.scrollTo({top:0, behavior:'instant'});
+  if (name === 'guidebook' && guideUnlocked) loadGuidebooks();
+}
+function openTrack(cat){
+  activeCategory = cat;
+  showView('directory');
+  document.querySelectorAll('#cat-list li').forEach(li => li.classList.toggle('active', li.dataset.cat === cat));
+  document.getElementById('content-title').textContent = TYPE_LABEL[cat];
+  loadListings();
+}
+
+// ---------- SIDEBAR TOGGLE (mobile) ----------
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+function openSidebar(){ sidebar.classList.add('open'); overlay.classList.add('open'); }
+function closeSidebar(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+document.getElementById('burger-btn').onclick = () => showView('home');
+document.getElementById('mobile-sidebar-btn').onclick = openSidebar;
+document.getElementById('sidebar-close-btn').onclick = closeSidebar;
+overlay.onclick = closeSidebar;
+
+// ---------- CATEGORY SELECT (inside directory view) ----------
+document.querySelectorAll('#cat-list li').forEach(li => {
+  li.addEventListener('click', () => {
+    document.querySelectorAll('#cat-list li').forEach(x => x.classList.remove('active'));
+    li.classList.add('active');
+    activeCategory = li.dataset.cat;
+    document.getElementById('content-title').textContent = activeCategory ? TYPE_LABEL[activeCategory] : "Barcha imkoniyatlar";
+    renderDirectory();
+    closeSidebar();
+  });
+});
+
+// ---------- LISTINGS ----------
+async function loadListings(){
+  document.getElementById('directory-list').innerHTML = '<p class="empty">Yuklanmoqda…</p>';
+  let query = sb.from('listings').select('*').order('created_at', { ascending: false });
+  const age = document.getElementById('f-age').value;
+  const country = document.getElementById('f-country').value.trim();
+  const language = document.getElementById('f-language').value.trim();
+  if (age) { query = query.lte('age_min', age); query = query.gte('age_max', age); }
+  if (country) query = query.ilike('country', `%${country}%`);
+  if (language) query = query.ilike('language', `%${language}%`);
+
+  const { data, error } = await query;
+  if (error){ document.getElementById('directory-list').innerHTML = `<p class="empty">Xatolik: ${error.message}</p>`; return; }
+  allListings = data;
+  updateCounts();
+  renderDirectory();
+}
+function updateCounts(){
+  document.getElementById('count-all').textContent = allListings.length;
+  ['camp','grant','volunteer'].forEach(t => { document.getElementById('count-'+t).textContent = allListings.filter(l => l.type === t).length; });
+}
+function renderDirectory(){
+  const list = document.getElementById('directory-list');
+  const countTag = document.getElementById('content-count');
+  const filtered = activeCategory ? allListings.filter(l => l.type === activeCategory) : allListings;
+  countTag.textContent = `${filtered.length} ta`;
+  if (filtered.length === 0){ list.innerHTML = '<p class="empty">Hech narsa topilmadi. Filtrni o\'zgartirib ko\'ring.</p>'; return; }
+  list.innerHTML = filtered.map((item, i) => `
+    <div class="drow cat-${item.type}" data-id="${item.id}">
+      <div class="drow-head">
+        <div class="idx">${String(i+1).padStart(2,'0')}</div>
+        <div class="titles"><div class="kicker ${item.type}">${TYPE_LABEL[item.type] || item.type}</div><h3>${escapeHtml(item.title)}</h3></div>
+        <div class="quick-meta">${item.country ? escapeHtml(item.country) : ''}${item.deadline ? ' · ' + item.deadline : ''}</div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="drow-body">
+        <div class="drow-body-inner">
+          <p>${escapeHtml(item.description || '')}</p>
+          <div class="meta">
+            ${item.age_min || item.age_max ? `<span>Yosh ${item.age_min ?? '?'}–${item.age_max ?? '?'}</span>` : ''}
+            ${item.country ? `<span>${escapeHtml(item.country)}</span>` : ''}
+            ${item.language ? `<span>${escapeHtml(item.language)}</span>` : ''}
+            ${item.deadline ? `<span>Muddat: ${item.deadline}</span>` : ''}
+          </div>
+          ${item.link ? `<a class="apply" href="${escapeAttr(item.link)}" target="_blank" rel="noopener">Batafsil →</a>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.drow-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const row = head.parentElement;
+      const wasOpen = row.classList.contains('open');
+      list.querySelectorAll('.drow').forEach(r => r.classList.remove('open'));
+      if (!wasOpen) row.classList.add('open');
+    });
+  });
+}
+['f-age','f-country','f-language'].forEach(id => { document.getElementById(id).addEventListener('input', debounce(loadListings, 350)); });
+
+// ---------- GUIDEBOOK GATE ----------
+document.getElementById('gate-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('gate-status');
+  status.textContent = 'Saqlanmoqda…'; status.className = 'status-msg';
+  const { error } = await sb.from('subscribers').insert({
+    name: document.getElementById('gate-name').value,
+    phone: document.getElementById('gate-phone').value
+  });
+  if (error){ status.textContent = 'Xatolik: ' + error.message; status.className = 'status-msg err'; return; }
+  guideUnlocked = true;
+  document.getElementById('guide-gate').style.display = 'none';
+  document.getElementById('guide-content').style.display = 'block';
+  loadGuidebooks();
+});
+async function loadGuidebooks(){
+  const el = document.getElementById('guide-cols');
+  const { data, error } = await sb.from('guidebooks').select('*').order('created_at', { ascending: false });
+  if (error){ el.innerHTML = `<p class="empty">Xatolik: ${error.message}</p>`; return; }
+  if (data.length === 0){ el.innerHTML = '<p class="empty">Hozircha material yo\'q.</p>'; return; }
+  el.innerHTML = data.map((g,i) => `
+    <div class="guide-item">
+      <div class="idx">${String(i+1).padStart(2,'0')}</div>
+      <h3>${escapeHtml(g.title)}</h3>
+      <p>${escapeHtml(g.content || '')}</p>
+      ${g.file_url ? `<a href="${escapeAttr(g.file_url)}" target="_blank" rel="noopener">Faylni ochish →</a>` : ''}
+    </div>
+  `).join('');
+}
+
+// ---------- HELP FORM ----------
+document.getElementById('help-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('help-status');
+  status.textContent = 'Yuborilmoqda…'; status.className='status-msg';
+  const { error } = await sb.from('help_messages').insert({
+    name: document.getElementById('h-name').value,
+    email: document.getElementById('h-email').value,
+    message: document.getElementById('h-msg').value
+  });
+  if (error){ status.textContent = 'Xatolik: ' + error.message; status.className='status-msg err'; return; }
+  status.textContent = 'Xabaringiz yuborildi. Rahmat!'; status.className='status-msg ok';
+  e.target.reset();
+});
+
+// ---------- ADMIN (no visible entry point: #admin hash or Ctrl+Alt+A) ----------
+const adminPanel = document.getElementById('admin-panel');
+function openAdmin(){ adminPanel.classList.add('open'); checkSession(); }
+function closeAdmin(){ adminPanel.classList.remove('open'); if (location.hash === '#admin') history.replaceState(null,'',location.pathname); }
+document.getElementById('admin-close-btn').onclick = closeAdmin;
+window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'a') openAdmin(); });
+if (location.hash === '#admin') openAdmin();
+
+async function checkSession(){ const { data: { session } } = await sb.auth.getSession(); session ? showAdminMain() : showAdminLogin(); }
+function showAdminLogin(){ document.getElementById('admin-login-view').style.display = 'block'; document.getElementById('admin-main-view').style.display = 'none'; }
+function showAdminMain(){ document.getElementById('admin-login-view').style.display = 'none'; document.getElementById('admin-main-view').style.display = 'block'; loadMessages(); }
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('login-status');
+  status.textContent = 'Tekshirilmoqda…'; status.className='status-msg';
+  const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('login-email').value, password: document.getElementById('login-password').value });
+  if (error){ status.textContent = 'Xatolik: ' + error.message; status.className='status-msg err'; return; }
+  status.textContent = ''; showAdminMain();
+});
+document.getElementById('logout-btn').onclick = async () => { await sb.auth.signOut(); showAdminLogin(); };
+
+document.querySelectorAll('.admin-tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.admin-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.admin-tab-panel').forEach(p => p.style.display = 'none');
+    const map = { 'add-listing':'listing-form', 'add-guide':'guide-form', 'messages':'messages-view', 'subscribers':'subscribers-view' };
+    document.getElementById(map[btn.dataset.tab]).style.display = 'block';
+    if (btn.dataset.tab === 'messages') loadMessages();
+    if (btn.dataset.tab === 'subscribers') loadSubscribers();
+  };
+});
+
+document.getElementById('listing-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('listing-status');
+  status.textContent = 'Saqlanmoqda…'; status.className='status-msg';
+  const { error } = await sb.from('listings').insert({
+    type: document.getElementById('l-type').value,
+    title: document.getElementById('l-title').value,
+    description: document.getElementById('l-desc').value,
+    age_min: document.getElementById('l-age-min').value || null,
+    age_max: document.getElementById('l-age-max').value || null,
+    country: document.getElementById('l-country').value || null,
+    language: document.getElementById('l-language').value || null,
+    deadline: document.getElementById('l-deadline').value || null,
+    link: document.getElementById('l-link').value || null
+  });
+  if (error){ status.textContent = 'Xatolik: ' + error.message; status.className='status-msg err'; return; }
+  status.textContent = 'Qo\'shildi!'; status.className='status-msg ok';
+  e.target.reset();
+  loadListings();
+});
+
+document.getElementById('guide-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('guide-status');
+  status.textContent = 'Saqlanmoqda…'; status.className='status-msg';
+  const { error } = await sb.from('guidebooks').insert({
+    title: document.getElementById('g-title').value,
+    content: document.getElementById('g-content').value || null,
+    file_url: document.getElementById('g-file').value || null
+  });
+  if (error){ status.textContent = 'Xatolik: ' + error.message; status.className='status-msg err'; return; }
+  status.textContent = 'Joylandi!'; status.className='status-msg ok';
+  e.target.reset();
+});
+
+async function loadMessages(){
+  const el = document.getElementById('messages-list');
+  const { data, error } = await sb.from('help_messages').select('*').order('created_at', { ascending: false });
+  if (error){ el.innerHTML = `<p class="empty">Xatolik: ${error.message}</p>`; return; }
+  if (data.length === 0){ el.innerHTML = '<p class="empty">Murojaatlar yo\'q.</p>'; return; }
+  el.innerHTML = data.map(m => `<div class="msg-item"><div class="who">${escapeHtml(m.name)} · ${escapeHtml(m.email)}</div><div>${escapeHtml(m.message)}</div></div>`).join('');
+}
+async function loadSubscribers(){
+  const el = document.getElementById('subscribers-list');
+  const { data, error } = await sb.from('subscribers').select('*').order('created_at', { ascending: false });
+  if (error){ el.innerHTML = `<p class="empty">Xatolik: ${error.message}</p>`; return; }
+  if (data.length === 0){ el.innerHTML = '<p class="empty">Hali hech kim ro\'yxatdan o\'tmagan.</p>'; return; }
+  el.innerHTML = data.map(s => `<div class="msg-item"><div class="who">${escapeHtml(s.name)}</div><div>${escapeHtml(s.phone)}</div></div>`).join('');
+}
+
+// ---------- utils ----------
+function debounce(fn, ms){ let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function escapeHtml(str){ return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(str){ return escapeHtml(str); }
+</script>
+
+</body>
+</html>
